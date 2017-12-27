@@ -1,0 +1,25 @@
+{
+  "name": "shortRent",
+  "version": "1.0.0",
+  "description": "支付宝小程序",
+  "main": "index.js",
+  "author": "ctyloading <946505808@qq.com>",
+  "license": "MIT",
+  "scripts": {
+    "build": "gulp build",
+    "dev": "gulp"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "del": "^3.0.0",
+    "gulp": "^3.9.1",
+    "gulp-cli": "^2.0.0",
+    "gulp-imagemin": "^4.0.0",
+    "gulp-less": "^3.4.0",
+    "gulp-sequence": "^0.4.6",
+    "gulp-typescript": "^3.2.3",
+    "tinyapp-typing": "^1.0.1",
+    "typescript": "^2.6.2",
+    "webpack-stream": "^4.0.0"
+  }
+}
