@@ -6,7 +6,6 @@ const rename = require('gulp-rename');
 const sourcemap = require('gulp-sourcemaps');
 const del = require('del');
 const webpack = require('webpack-stream');
-const sequence = require('gulp-sequence');
 const gulpWatch = require('gulp-watch');
 const chalk = require('chalk');
 const moment = require('moment');
