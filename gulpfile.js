@@ -7,6 +7,9 @@ const sourcemap = require('gulp-sourcemaps');
 const del = require('del');
 const webpack = require('webpack-stream');
 const sequence = require('gulp-sequence');
+const gulpWatch = require('gulp-watch');
+const chalk = require('chalk');
+const moment = require('moment');
 
 const tsProject = ts.createProject('tsconfig.json');
 
@@ -15,36 +18,36 @@ const config = {
   ts: {
     src: [
       'src/**/*.ts',
-      'src/!extra.ts',
-      'src/!.tea/**/*',
+      '!src/extra.ts',
+      '!src/.tea/**/*',
     ],
     dest: 'dist'
   },
   less: {
     src: [
       'src/**/*.less',
-      'src/!.tea/**/*',
+      '!src/.tea/**/*',
     ],
     dest: 'dist',
   },
   html: {
     src: [
       'src/**/*.html',
-      'src/!.tea/**/*',
+      '!src/.tea/**/*',
     ],
     dest: 'dist',
   },
   images: {
     src: [
       'src/images/*',
-      'src/!.tea/**/*',
+      '!src/.tea/**/*',
     ],
     dest: 'dist/images'
   },
   json: {
     src: [
       'src/**/*.json',
-      'src/!.tea/**/*',
+      '!src/.tea/**/*',
     ],
     dest: 'dist',
   },
@@ -60,23 +63,23 @@ const config = {
 //#endregion
 
 //#region compile
-gulp.task('compile::ts', () => {
+const compileTs = () => {
   return gulp.src(config.ts.src)
     .pipe(tsProject())
     .js
     .pipe(gulp.dest(config.ts.dest));
-});
+}
 
-gulp.task('compile::less', () => {
+const compileLess = () => {
   return gulp.src(config.less.src)
     .pipe(less())
     .pipe(rename(path => {
       path.extname = '.acss';
     }))
     .pipe(gulp.dest(config.less.dest));
-});
+}
 
-gulp.task('compile::images', () => {
+const compileImages = () => {
   return gulp.src(config.images.src)
     .pipe(imagemin([
       imagemin.gifsicle({ interlaced: true }),
@@ -90,80 +93,78 @@ gulp.task('compile::images', () => {
       })
     ]))
     .pipe(gulp.dest(config.images.dest));
-});
+}
 
-gulp.task('compile::html', () => {
+const compileHtml = () => {
   return gulp.src(config.html.src)
     .pipe(rename(path => {
       path.extname = '.axml';
     }))
     .pipe(gulp.dest(config.html.dest));
-});
+}
 
-gulp.task('compile::json', () => {
+const compileJson = () => {
   return gulp.src(config.json.src)
     .pipe(gulp.dest(config.json.dest));
-});
+}
 
-gulp.task('compile::extra', () => {
+const compileExtra = () => {
   return gulp.src(config.extra.src)
     .pipe(webpack())
     .pipe(rename(path => {
       path.basename = 'extra'
     }))
     .pipe(gulp.dest(config.extra.dest));
-});;
+}
 
 //#endregion
 
 //#region watch
-gulp.task('watch', [
-  'watch::ts',
-  'watch::less',
-  'watch::images',
-  'watch::html',
-  'watch::json',
-  'watch::extra',
-]);
 
-gulp.task('watch::ts', () => gulp.watch(config.ts.src, [ 'compile::ts' ]));
+const watchTs = () => gulp.watch(config.ts.src, { ignoreInitial: false }, compileTs)
 
-gulp.task('watch::less', () => gulp.watch(config.less.src, [ 'compile::less' ]));
+const watchLess = () => gulp.watch(config.less.src, { ignoreInitial: false }, compileLess)
 
-gulp.task('watch::images', () => gulp.watch(config.images.src, [ 'compile::images' ]));
+const watchImages = () => gulp.watch(config.images.src, { ignoreInitial: false }, compileImages)
 
-gulp.task('watch::html', () => gulp.watch(config.html.src, [ 'compile::html' ]));
+const watchHtml = () => gulp.watch(config.html.src, { ignoreInitial: false }, compileHtml)
 
-gulp.task('watch::json', () => gulp.watch(config.json.src, [ 'compile::json' ]));
+const watchJson = () => gulp.watch(config.json.src, { ignoreInitial: false }, compileJson)
 
-gulp.task('watch::extra', () => gulp.watch(config.extra.src, [ 'compile::extra' ]));
+const watchExtra = () => gulp.watch(config.extra.src, { ignoreInitial: false }, compileExtra)
+
+
+const watch = () => {
+  [
+    watchTs,
+    watchLess,
+    watchImages,
+    watchHtml,
+    watchJson,
+    watchExtra
+  ].map(wacher => {
+    wacher()
+      .on('change', (path, stats) => console.log(`[${ moment().format('HH:mm:ss') }] ${ chalk.blueBright('File') } ${ path } ${ chalk.cyanBright('Changed') }`))
+      .on('unlink', (path, stats) => console.log(`[${ moment().format('HH:mm:ss') }] ${ chalk.blueBright('File') } ${ path } ${ chalk.redBright('Removed') }`))
+      .on('add', (path, stats) => console.log(`[${ moment().format('HH:mm:ss') }] ${ chalk.blueBright('File') } ${ path } ${ chalk.greenBright('Added') }`))
+  })
+}
+
 //#endregion
 
-gulp.task('copy::ideconfig', () => {
+const copyIdeconfig =  () => {
   return gulp.src(config.ideconfig.src) 
     .pipe(gulp.dest(config.ideconfig.dest));
-});
+}
 
-gulp.task('clean', (cb) => {
+const clean = (cb) => {
   return del([
     'dist',
   ], cb)
-})
+};
 
-gulp.task('build', sequence(
-  'clean',
-  'copy::ideconfig' ,
-  [
-    'compile::ts',
-    'compile::less',
-    'compile::images',
-    'compile::html',
-    'compile::json',
-  ],
-  'compile::extra',
-));
+const build = gulp.series(clean, copyIdeconfig, gulp.parallel(compileTs, compileLess, compileImages, compileHtml, compileJson), compileExtra)
 
-gulp.task('default', sequence(
-  'build',
-  'watch'
-));
+
+gulp.task('build', build);
+gulp.task('default', gulp.series(build, watch));
