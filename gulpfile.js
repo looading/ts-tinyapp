@@ -1,3 +1,4 @@
+
 const gulp = require('gulp');
 const imagemin = require('gulp-imagemin');
 const less = require('gulp-less');
@@ -9,6 +10,7 @@ const webpack = require('webpack-stream');
 const gulpWatch = require('gulp-watch');
 const chalk = require('chalk');
 const moment = require('moment');
+const plumber = require('gulp-plumber');
 
 const tsProject = ts.createProject('tsconfig.json');
 
@@ -71,10 +73,14 @@ const compileTs = () => {
 
 const compileLess = () => {
   return gulp.src(config.less.src)
+    .pipe(plumber(error => {
+      console.log(chalk.redBright(error))
+    }))
     .pipe(less())
     .pipe(rename(path => {
       path.extname = '.acss';
     }))
+    .pipe(plumber.stop())
     .pipe(gulp.dest(config.less.dest));
 }
 
@@ -109,7 +115,22 @@ const compileJson = () => {
 
 const compileExtra = () => {
   return gulp.src(config.extra.src)
-    .pipe(webpack())
+    .pipe(webpack({
+      output: {
+        libraryTarget: 'umd',
+        library: {
+          root: "extra",
+          amd: "extra",
+          commonjs: "extra"
+        },
+        auxiliaryComment: {
+          root: "Root Comment",
+          commonjs: "CommonJS Comment",
+          commonjs2: "CommonJS2 Comment",
+          amd: "AMD Comment"
+        }
+      }
+    }))
     .pipe(rename(path => {
       path.basename = 'extra'
     }))
